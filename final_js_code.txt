@@ -1,0 +1,50 @@
+## ÖNEMLİ DEĞİŞİKLİKLER:
+
+1. **Gemini API Key kodun içinde tanımlı:**
+   - const GEMINI_API_KEY = "AIzaSyBrCJ5TKSqJ0H9z5VBbPMz5FPUqNpZUEqg";
+
+2. **Sınıf raporu için AI değerlendirmesi eklendi:**
+   - HTML'de class-gemini-section bölümü eklendi
+   - class-gemini-feedback-button ve class-gemini-feedback-container elementleri eklendi
+
+3. **PDF çıktısı hem bireysel hem sınıf raporu için aktif:**
+   - showClassReport() fonksiyonunda: pdfButton.style.display = 'flex';
+   - currentView değişkeni ile hangi görünümde olduğumuz takip ediliyor
+
+4. **PDF fonksiyonu güncellenmeli:**
+   - currentView === 'class' kontrolü eklenmeli
+   - Sınıf raporu için ayrı PDF oluşturma mantığı eklenmeli
+
+5. **Sınıf AI değerlendirmesi için yeni fonksiyon eklenmeli:**
+   - getClassGeminiFeedback() fonksiyonu
+   - Sınıfın genel profilini analiz edecek
+
+## EKSİK JAVASCRIPT FONKSİYONLARI:
+
+Aşağıdaki fonksiyonlar dosyaya eklenmeli:
+
+1. calculateAndDisplayVARK()
+2. calculateAndDisplayHabits()  
+3. calculateAndDisplayHolland()
+4. generateClassReport()
+5. getGeminiFeedback() - güncellenmeli (API key kullanacak)
+6. getClassGeminiFeedback() - yeni eklenecek
+7. loadProfiles()
+8. updateProfileSelectors()
+9. populateModalForm()
+10. clearModalForm()
+11. saveCurrentProfile()
+12. deleteCurrentProfile()
+13. showModalMessage()
+14. loadSavedReports()
+15. updateSavedReportsSelector()
+16. saveReportData()
+17. Event listeners (tüm buton click eventleri)
+18. PDF export fonksiyonu güncellenmeli
+
+## KULLANIM:
+
+1. Dosya tek HTML dosyası olarak çalışacak
+2. Gemini API otomatik olarak kullanılacak
+3. Sınıf raporu PDF çıktısı alınabilecek
+4. Sınıf için AI değerlendirmesi yapılabilecek
