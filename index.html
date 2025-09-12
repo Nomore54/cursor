@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optik Form Değerlendirme Aracı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG4dTYdIMAn2CTiUA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+        .file-input-label { cursor: pointer; padding: 1.5rem 1rem; border-radius: 0.5rem; border: 2px dashed #9ca3af; background-color: #f9fafb; color: #4b5563; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .file-input-label:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .tab-button { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; border: 2px solid transparent; }
+        .tab-button.active { background-color: #3b82f6; color: white; }
+        .tab-button:not(.active) { background-color: #e5e7eb; color: #4b5563; }
+        .report-section { background-color: #f9fafb; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .report-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;}
+        .report-subtitle { font-size: 1.125rem; font-weight: 600; color: #1e3a8a; margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: 2px solid #dbeafe; padding-bottom: 0.25rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 50; transition: opacity 0.3s; }
+        .modal-content { background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;}
+
+        /* YENİ: Yazı puntosunu küçültmek için eklendi */
+        #vark-section, #habits-section {
+            font-size: 75%;
+        }
+        #vark-section .report-title, 
+        #habits-section .report-title {
+            font-size: 1.2rem;
+        }
+        #vark-section .report-subtitle, 
+        #habits-section .report-subtitle {
+             font-size: 0.9rem;
+        }
+        #vark-section .text-xl, 
+        #habits-section .text-xl {
+            font-size: 1rem; 
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+
+    <div id="app-container" class="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-6 md:p-10 transition-all duration-500">
+        
+        <div id="upload-screen">
+             <div class="flex justify-between items-center mb-4">
+                 <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Gelişmiş Raporlama Aracı</h1>
+                 <button id="settings-button" class="bg-gray-200 text-gray-700 p-2 rounded-full hover:bg-gray-300 transition-colors" title="Ayarlar">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                 </button>
+             </div>
+             <p class="text-center text-gray-600 mb-8">Sekonic `.txt` ham veri dosyasını yükleyerek veya daha önce kaydettiğiniz bir raporu seçerek başlayın.</p>
+             <div class="max-w-md mx-auto">
+                <div id="saved-reports-section" class="mb-6">
+                    <label for="saved-reports-selector" class="block text-sm font-medium text-gray-700 mb-1">Kaydedilmiş Raporlar:</label>
+                    <div class="flex gap-2">
+                        <select id="saved-reports-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></select>
+                        <button id="load-saved-report-button" class="bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition-colors">Yükle</button>
+                        <button id="delete-saved-report-button" class="bg-red-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-red-700 transition-colors">Sil</button>
+                    </div>
+                </div>
+
+                <div class="text-center my-4 text-gray-500 font-semibold">veya</div>
+                 
+                 <div class="mb-4">
+                     <label for="profile-selector" class="block text-sm font-medium text-gray-700 mb-1">Yeni Dosya İçin Optik Form Ayarı:</label>
+                     <select id="profile-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                 </div>
+                 <label for="file-input" class="file-input-label">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                     <span id="file-input-name" class="font-semibold text-gray-700">Yeni Veri (.txt) Dosyası Seçin</span>
+                 </label>
+                 <input type="file" id="file-input" class="hidden" accept=".txt">
+                 <p id="upload-error" class="text-red-500 text-center mt-4"></p>
+             </div>
+        </div>
+
+        <div id="results-screen" class="hidden">
+             <div class="flex flex-col md:flex-row justify-between items-center border-b pb-4 mb-6 gap-4">
+                 <div>
+                     <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Analiz Sonuçları</h1>
+                     <p id="class-info" class="text-sm text-gray-500"></p>
+                 </div>
+                 <div class="flex items-center gap-2">
+                     <button id="pdf-button" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors shadow-md flex items-center gap-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm6 12a1 1 0 100-2 1 1 0 000 2zM6 8a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>
+                         PDF İndir
+                     </button>
+                     <button id="restart-button" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors shadow-md">Yeni Dosya</button>
+                 </div>
+             </div>
+             
+             <div class="flex justify-center my-6">
+                 <div class="flex p-1 bg-gray-200 rounded-lg">
+                     <button id="individual-report-tab" class="tab-button active">Bireysel Rapor</button>
+                     <button id="class-report-tab" class="tab-button">Sınıf Raporu</button>
+                 </div>
+             </div>
+             
+             <div id="individual-report-view">
+                 <div class="w-full text-center mb-6">
+                     <label for="student-selector" class="block text-sm font-medium text-gray-700 mb-1">Öğrenci Seçin:</label>
+                     <select id="student-selector" class="w-full max-w-xs mx-auto p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                 </div>
+                  <div id="individual-report-container">
+                     <div class="text-center border-b-2 pb-4 mb-6" id="report-header">
+                          <h1 class="text-3xl font-bold text-gray-800">Öğrenci Gelişim Raporu</h1>
+                          <p id="student-id-display" class="text-lg text-gray-600 mt-2"></p>
+                     </div>
+                      <div class="space-y-8">
+                          <div id="vark-habits-wrapper">
+                              <div class="report-section" id="vark-section">
+                                  <h2 class="report-title text-blue-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>VARK Öğrenme Stili Analizi</h2>
+                                  <p id="vark-result-text" class="text-xl font-semibold text-gray-800 mb-4"></p>
+                                  <div id="vark-chart" class="space-y-2 mb-6"></div>
+                                  <div id="vark-details" class="mt-4 pt-4 space-y-4"></div>
+                              </div>
+                               <div class="report-section mt-8" id="habits-section">
+                                  <h2 class="report-title text-green-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h.01a1 1 0 100-2H10zm3 0a1 1 0 000 2h.01a1 1 0 100-2H13z" clip-rule="evenodd" /></svg>Çalışma Alışkanlıkları Değerlendirmesi</h2>
+                                  <p id="habits-result-text" class="text-xl font-semibold text-gray-800"></p>
+                                  <div id="habits-details" class="mt-4 pt-4 space-y-4"></div>
+                              </div>
+                          </div>
+                          <div class="report-section" id="holland-section">
+                              <h2 class="report-title text-purple-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L9 9.61V16a1 1 0 001 1h2a1 1 0 001-1v-6.39l6.394-2.69a1 1 0 000-1.84l-7-3zM10 8a1 1 0 100-2 1 1 0 000 2z" /></svg>Holland Mesleki İlgi Kodu</h2>
+                              <p id="holland-result-code" class="text-3xl font-bold text-center tracking-widest text-gray-800 bg-purple-100 py-3 rounded-lg mb-4"></p>
+                              <div id="holland-result-descriptions" class="space-y-6"></div>
+                          </div>
+                          <div class="report-section" id="gemini-section">
+                              <h2 class="report-title text-orange-700">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                                  ✨ Gemini ile Kişiselleştirilmiş Değerlendirme
+                              </h2>
+                              <p class="text-gray-600 mb-4">Aşağıdaki buton, öğrencinin tüm envanter sonuçlarını (VARK, Çalışma Alışkanlıkları, Holland) analiz ederek yapay zeka destekli, bütünsel bir geri bildirim ve tavsiye metni oluşturur.</p>
+                              <button id="gemini-feedback-button" class="bg-gradient-to-r from-purple-500 to-orange-500 text-white font-bold py-3 px-6 rounded-lg hover:from-purple-600 hover:to-orange-600 transition-all shadow-lg w-full flex items-center justify-center gap-2">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2 18l-2 4 4-2 16.36-16.36a1.21 1.21 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+                                  Geri Bildirim Oluştur
+                              </button>
+                              <div id="gemini-feedback-container" class="mt-6 p-4 bg-gray-100 rounded-lg border border-gray-200 min-h-[100px] whitespace-pre-wrap text-gray-800 leading-relaxed">
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+             </div>
+
+             <div id="class-report-view" class="hidden">
+                 <div id="class-report-container" class="space-y-8"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Ayarlar</h2>
+            <div class="space-y-6">
+                <!-- Gemini API Key Bölümü -->
+                <div class="border-b pb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Gemini API Ayarları</h3>
+                    <div>
+                        <label for="gemini-api-key-input" class="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+                        <input type="password" id="gemini-api-key-input" class="w-full p-2 border border-gray-300 rounded-md" placeholder="API key'inizi buraya girin">
+                        <p class="text-xs text-gray-500 mt-1">API key'iniz güvenli bir şekilde tarayıcınızda saklanır.</p>
+                    </div>
+                </div>
+                
+                <!-- Optik Form Ayarları -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">Optik Form Ayarları</h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-grow">
+                            <label for="modal-profile-selector" class="block text-sm font-medium text-gray-700">Kayıtlı Özel Profiller</label>
+                            <select id="modal-profile-selector" class="w-full p-2 mt-1 border border-gray-300 rounded-md"></select>
+                        </div>
+                        <button id="new-profile-button" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Yeni</button>
+                        <button id="delete-profile-button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Sil</button>
+                    </div>
+                     <div class="border-t pt-4 mt-4">
+                        <div>
+                            <label for="profile-name-input" class="block text-sm font-medium text-gray-700">Profil Adı</label>
+                            <input type="text" id="profile-name-input" class="w-full p-2 mt-1 border border-gray-300 rounded-md" placeholder="Örn: Okul Deneme Sınavı Formu">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Lütfen verilerin başladığı ve bittiği **karakter sıralarını** girin (1'den başlayarak).</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                 <h4 class="font-semibold mb-2">Öğrenci Bilgileri</h4>
+                                 <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-sm">Ad Soyad Başl.</label><input type="number" data-key="nameStart" class="w-full p-1 mt-1 border rounded" placeholder="örn: 16"></div>
+                                    <div><label class="text-sm">Ad Soyad Bitiş</label><input type="number" data-key="nameEnd" class="w-full p-1 mt-1 border rounded" placeholder="örn: 35"></div>
+                                    <div><label class="text-sm">Sınıf Başl. (isteğe bağlı)</label><input type="number" data-key="classStart" class="w-full p-1 mt-1 border rounded"></div>
+                                    <div><label class="text-sm">Sınıf Bitiş</label><input type="number" data-key="classEnd" class="w-full p-1 mt-1 border rounded"></div>
+                                 </div>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-lg border">
+                                 <h4 class="font-semibold mb-2">Envanter Cevapları</h4>
+                                 <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-sm">VARK Başl.</label><input type="number" data-key="varkStart" class="w-full p-1 mt-1 border rounded" placeholder="örn: 189"></div>
+                                    <div><label class="text-sm">VARK Bitiş</label><input type="number" data-key="varkEnd" class="w-full p-1 mt-1 border rounded" placeholder="örn: 196"></div>
+                                    <div><label class="text-sm">Alışkanlık Başl.</label><input type="number" data-key="habitsStart" class="w-full p-1 mt-1 border rounded" placeholder="örn: 197"></div>
+                                    <div><label class="text-sm">Alışkanlık Bitiş</label><input type="number" data-key="habitsEnd" class="w-full p-1 mt-1 border rounded" placeholder="örn: 216"></div>
+                                    <div><label class="text-sm">Holland Başl.</label><input type="number" data-key="hollandStart" class="w-full p-1 mt-1 border rounded" placeholder="örn: 62"></div>
+                                    <div><label class="text-sm">Holland Bitiş</label><input type="number" data-key="hollandEnd" class="w-full p-1 mt-1 border rounded" placeholder="örn: 151"></div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="flex justify-end gap-4 mt-8">
+                <button id="close-modal-button" class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600">Kapat</button>
+                <button id="save-profile-button" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700">Kaydet</button>
+            </div>
+            <p id="modal-message" class="text-center text-sm mt-4"></p>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
