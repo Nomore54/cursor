@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ödev Programı Oluşturucu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%;
+            overflow: auto; 
+            background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            visibility: hidden;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            margin: 3% auto; 
+            padding: 0; 
+            border: none;
+            width: 90%; 
+            max-width: 700px; 
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transform: scale(0.9) translateY(-20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        .modal.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .close {
+            color: white;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        .close:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .modal-body {
+            padding: 32px;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #ffffff, #f9fafb);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+        }
+        .homework-item {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .homework-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+        .homework-item.completed {
+            background: linear-gradient(145deg, #f0fdf4, #dcfce7);
+            border-color: #10b981;
+        }
+        .homework-item.overdue {
+            background: linear-gradient(145deg, #fef2f2, #fee2e2);
+            border-color: #ef4444;
+        }
+        .homework-item.urgent {
+            background: linear-gradient(145deg, #fffbeb, #fef3c7);
+            border-color: #f59e0b;
+        }
+        .priority-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .priority-high {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        .priority-medium {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        .priority-low {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .stats-card {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .stats-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .chart-container {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .filter-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+        .filter-tab:hover {
+            transform: translateY(-1px);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .floating-add-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 0.3s ease;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .notification.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+            }
+            .modal-body {
+                padding: 20px;
+            }
+            .stats-card {
+                margin-bottom: 16px;
+            }
+            .filter-tabs {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gray-100">
+        <!-- Header -->
+        <header class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-graduation-cap text-3xl text-indigo-600 mr-3"></i>
+                        <h1 class="text-2xl font-bold text-gray-900">Ödev Programı Oluşturucu</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="exportToPDF()" class="btn btn-secondary">
+                            <i class="fas fa-file-pdf"></i>
+                            PDF İndir
+                        </button>
+                        <button onclick="exportToExcel()" class="btn btn-success">
+                            <i class="fas fa-file-excel"></i>
+                            Excel İndir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="stats-card">
+                    <div class="stats-number text-blue-600" id="totalHomework">0</div>
+                    <div class="stats-label">Toplam Ödev</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-number text-green-600" id="completedHomework">0</div>
+                    <div class="stats-label">Tamamlanan</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-number text-red-600" id="overdueHomework">0</div>
+                    <div class="stats-label">Geciken</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-number text-yellow-600" id="urgentHomework">0</div>
+                    <div class="stats-label">Acil</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Genel İlerleme</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="text-sm text-gray-600 mt-2" id="progressText">0% tamamlandı</div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-container mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Ödev Dağılımı</h3>
+                <canvas id="homeworkChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Filtreler</h3>
+                <div class="filter-tabs">
+                    <div class="filter-tab active" onclick="filterHomework('all')">Tümü</div>
+                    <div class="filter-tab" onclick="filterHomework('pending')">Bekleyen</div>
+                    <div class="filter-tab" onclick="filterHomework('completed')">Tamamlanan</div>
+                    <div class="filter-tab" onclick="filterHomework('overdue')">Geciken</div>
+                    <div class="filter-tab" onclick="filterHomework('urgent')">Acil</div>
+                </div>
+            </div>
+
+            <!-- Homework List -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Ödev Listesi</h3>
+                    <button onclick="openModal()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Yeni Ödev Ekle
+                    </button>
+                </div>
+                <div id="homeworkList">
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3 class="text-xl font-semibold mb-2">Henüz ödev eklenmemiş</h3>
+                        <p class="text-gray-600">İlk ödevinizi eklemek için yukarıdaki butona tıklayın.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Floating Add Button -->
+        <button class="floating-add-btn" onclick="openModal()">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <!-- Modal -->
+        <div id="homeworkModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Yeni Ödev Ekle</h2>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="homeworkForm">
+                        <div class="form-group">
+                            <label class="form-label" for="title">Ödev Başlığı</label>
+                            <input type="text" id="title" class="form-input" placeholder="Ödev başlığını girin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="description">Açıklama</label>
+                            <textarea id="description" class="form-input form-textarea" placeholder="Ödev açıklamasını girin"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="subject">Ders</label>
+                            <input type="text" id="subject" class="form-input" placeholder="Ders adını girin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dueDate">Teslim Tarihi</label>
+                            <input type="date" id="dueDate" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="priority">Öncelik</label>
+                            <select id="priority" class="form-input" required>
+                                <option value="low">Düşük</option>
+                                <option value="medium">Orta</option>
+                                <option value="high">Yüksek</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="estimatedTime">Tahmini Süre (saat)</label>
+                            <input type="number" id="estimatedTime" class="form-input" placeholder="Tahmini süreyi girin" min="1" max="100">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" onclick="closeModal()" class="btn btn-secondary">
+                                <i class="fas fa-times"></i>
+                                İptal
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let homeworkList = JSON.parse(localStorage.getItem('homeworkList')) || [];
+        let currentFilter = 'all';
+        let chart = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatistics();
+            updateChart();
+            renderHomeworkList();
+            setMinDate();
+        });
+
+        // Set minimum date to today
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dueDate').setAttribute('min', today);
+        }
+
+        // Modal functions
+        function openModal() {
+            document.getElementById('homeworkModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('homeworkModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+            document.getElementById('homeworkForm').reset();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('homeworkModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Form submission
+        document.getElementById('homeworkForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const homework = {
+                id: Date.now(),
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                subject: document.getElementById('subject').value,
+                dueDate: document.getElementById('dueDate').value,
+                priority: document.getElementById('priority').value,
+                estimatedTime: parseInt(document.getElementById('estimatedTime').value) || 1,
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+
+            homeworkList.push(homework);
+            localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
+            
+            updateStatistics();
+            updateChart();
+            renderHomeworkList();
+            closeModal();
+            showNotification('Ödev başarıyla eklendi!', 'success');
+        });
+
+        // Update statistics
+        function updateStatistics() {
+            const total = homeworkList.length;
+            const completed = homeworkList.filter(h => h.completed).length;
+            const overdue = homeworkList.filter(h => !h.completed && new Date(h.dueDate) < new Date()).length;
+            const urgent = homeworkList.filter(h => !h.completed && h.priority === 'high').length;
+
+            document.getElementById('totalHomework').textContent = total;
+            document.getElementById('completedHomework').textContent = completed;
+            document.getElementById('overdueHomework').textContent = overdue;
+            document.getElementById('urgentHomework').textContent = urgent;
+
+            // Update progress bar
+            const progress = total > 0 ? (completed / total) * 100 : 0;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = Math.round(progress) + '% tamamlandı';
+        }
+
+        // Update chart
+        function updateChart() {
+            const ctx = document.getElementById('homeworkChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const completed = homeworkList.filter(h => h.completed).length;
+            const pending = homeworkList.filter(h => !h.completed && new Date(h.dueDate) >= new Date()).length;
+            const overdue = homeworkList.filter(h => !h.completed && new Date(h.dueDate) < new Date()).length;
+
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tamamlanan', 'Bekleyen', 'Geciken'],
+                    datasets: [{
+                        data: [completed, pending, overdue],
+                        backgroundColor: [
+                            '#10b981',
+                            '#3b82f6',
+                            '#ef4444'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render homework list
+        function renderHomeworkList() {
+            const container = document.getElementById('homeworkList');
+            
+            if (homeworkList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3 class="text-xl font-semibold mb-2">Henüz ödev eklenmemiş</h3>
+                        <p class="text-gray-600">İlk ödevinizi eklemek için yukarıdaki butona tıklayın.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let filteredList = homeworkList;
+            if (currentFilter !== 'all') {
+                filteredList = homeworkList.filter(homework => {
+                    switch (currentFilter) {
+                        case 'pending':
+                            return !homework.completed && new Date(homework.dueDate) >= new Date();
+                        case 'completed':
+                            return homework.completed;
+                        case 'overdue':
+                            return !homework.completed && new Date(homework.dueDate) < new Date();
+                        case 'urgent':
+                            return !homework.completed && homework.priority === 'high';
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            if (filteredList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3 class="text-xl font-semibold mb-2">Filtreye uygun ödev bulunamadı</h3>
+                        <p class="text-gray-600">Farklı bir filtre seçmeyi deneyin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredList.map(homework => {
+                const dueDate = new Date(homework.dueDate);
+                const isOverdue = !homework.completed && dueDate < new Date();
+                const isUrgent = !homework.completed && homework.priority === 'high';
+                
+                let itemClass = 'homework-item';
+                if (homework.completed) itemClass += ' completed';
+                else if (isOverdue) itemClass += ' overdue';
+                else if (isUrgent) itemClass += ' urgent';
+
+                return `
+                    <div class="${itemClass}">
+                        <div class="priority-badge priority-${homework.priority}">
+                            ${homework.priority === 'high' ? 'Yüksek' : homework.priority === 'medium' ? 'Orta' : 'Düşük'}
+                        </div>
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-lg font-semibold text-gray-900">${homework.title}</h4>
+                            <div class="flex space-x-2">
+                                <button onclick="toggleComplete(${homework.id})" class="btn ${homework.completed ? 'btn-secondary' : 'btn-success'}">
+                                    <i class="fas fa-${homework.completed ? 'undo' : 'check'}"></i>
+                                    ${homework.completed ? 'Geri Al' : 'Tamamla'}
+                                </button>
+                                <button onclick="deleteHomework(${homework.id})" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                    Sil
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-gray-600 mb-2">
+                            <i class="fas fa-book mr-2"></i>
+                            <strong>Ders:</strong> ${homework.subject}
+                        </div>
+                        ${homework.description ? `
+                            <div class="text-gray-600 mb-2">
+                                <i class="fas fa-align-left mr-2"></i>
+                                <strong>Açıklama:</strong> ${homework.description}
+                            </div>
+                        ` : ''}
+                        <div class="text-gray-600 mb-2">
+                            <i class="fas fa-calendar mr-2"></i>
+                            <strong>Teslim Tarihi:</strong> ${dueDate.toLocaleDateString('tr-TR')}
+                        </div>
+                        <div class="text-gray-600">
+                            <i class="fas fa-clock mr-2"></i>
+                            <strong>Tahmini Süre:</strong> ${homework.estimatedTime} saat
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter homework
+        function filterHomework(filter) {
+            currentFilter = filter;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderHomeworkList();
+        }
+
+        // Toggle complete status
+        function toggleComplete(id) {
+            const homework = homeworkList.find(h => h.id === id);
+            if (homework) {
+                homework.completed = !homework.completed;
+                localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
+                updateStatistics();
+                updateChart();
+                renderHomeworkList();
+                showNotification(homework.completed ? 'Ödev tamamlandı!' : 'Ödev geri alındı!', 'info');
+            }
+        }
+
+        // Delete homework
+        function deleteHomework(id) {
+            if (confirm('Bu ödevi silmek istediğinizden emin misiniz?')) {
+                homeworkList = homeworkList.filter(h => h.id !== id);
+                localStorage.setItem('homeworkList', JSON.stringify(homeworkList));
+                updateStatistics();
+                updateChart();
+                renderHomeworkList();
+                showNotification('Ödev silindi!', 'success');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Export to PDF
+        function exportToPDF() {
+            if (homeworkList.length === 0) {
+                showNotification('PDF oluşturmak için en az bir ödev eklenmelidir!', 'error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text('Ödev Programı', 20, 20);
+            
+            // Statistics
+            doc.setFontSize(12);
+            doc.text(`Toplam Ödev: ${homeworkList.length}`, 20, 40);
+            doc.text(`Tamamlanan: ${homeworkList.filter(h => h.completed).length}`, 20, 50);
+            doc.text(`Geciken: ${homeworkList.filter(h => !h.completed && new Date(h.dueDate) < new Date()).length}`, 20, 60);
+            
+            // Homework list
+            let y = 80;
+            homeworkList.forEach((homework, index) => {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.text(`${index + 1}. ${homework.title}`, 20, y);
+                y += 10;
+                
+                doc.setFontSize(10);
+                doc.text(`Ders: ${homework.subject}`, 20, y);
+                y += 6;
+                doc.text(`Teslim: ${new Date(homework.dueDate).toLocaleDateString('tr-TR')}`, 20, y);
+                y += 6;
+                doc.text(`Öncelik: ${homework.priority === 'high' ? 'Yüksek' : homework.priority === 'medium' ? 'Orta' : 'Düşük'}`, 20, y);
+                y += 6;
+                doc.text(`Durum: ${homework.completed ? 'Tamamlandı' : 'Bekliyor'}`, 20, y);
+                y += 15;
+            });
+            
+            doc.save('odev-programi.pdf');
+            showNotification('PDF başarıyla indirildi!', 'success');
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            if (homeworkList.length === 0) {
+                showNotification('Excel oluşturmak için en az bir ödev eklenmelidir!', 'error');
+                return;
+            }
+
+            const data = homeworkList.map(homework => ({
+                'Başlık': homework.title,
+                'Ders': homework.subject,
+                'Açıklama': homework.description || '',
+                'Teslim Tarihi': new Date(homework.dueDate).toLocaleDateString('tr-TR'),
+                'Öncelik': homework.priority === 'high' ? 'Yüksek' : homework.priority === 'medium' ? 'Orta' : 'Düşük',
+                'Tahmini Süre': homework.estimatedTime + ' saat',
+                'Durum': homework.completed ? 'Tamamlandı' : 'Bekliyor'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Ödev Listesi');
+            
+            XLSX.writeFile(wb, 'odev-programi.xlsx');
+            showNotification('Excel dosyası başarıyla indirildi!', 'success');
+        }
+    </script>
+</body>
+</html>
